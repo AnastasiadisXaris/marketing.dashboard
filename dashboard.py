@@ -130,5 +130,5 @@ with tab3:
             pdf.cell(col_width, row_height, str(item), border=1)
         pdf.ln(row_height)
 
-    pdf_bytes = pdf.output(dest='S').encode('latin1')  # Εδώ επιστρέφουμε το pdf ως bytes
+    pdf_bytes = pdf.output(dest='S').encode('latin1')
     return pdf_bytes
