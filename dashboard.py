@@ -7,7 +7,7 @@ st.set_page_config(page_title="Marketing Analytics Dashboard", layout="wide")
 st.title("📊 Marketing Analytics Dashboard")
 
 # Ανάγνωση δεδομένων
-df = pd.read_csv("data/marketing_data.csv")
+df = pd.read_csv("marketing_data.csv")
 
 # Επιλογή φίλτρων
 channels = st.multiselect("Επιλέξτε Κανάλια:", options=df["channel"].unique(), default=df["channel"].unique())
