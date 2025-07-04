@@ -3,49 +3,54 @@ import pandas as pd
 import plotly.express as px
 from io import BytesIO
 from fpdf import FPDF
-import base64
 import datetime
 
 st.set_page_config(page_title="Marketing Analytics Dashboard", layout="wide")
 
 st.title("📊 Marketing Analytics Dashboard")
 
-# --- Sidebar for upload or sample data
-uploaded_file = st.sidebar.file_uploader("📂 Ανεβάστε το CSV αρχείο σας", type=["csv"])
+# --- Επιλογή δεδομένων (Demo ή Upload) ---
+st.sidebar.header("Επιλογή δεδομένων")
+data_source = st.sidebar.radio("Επιλέξτε δεδομένα για ανάλυση:", ("Demo CSV", "Ανέβασμα δικού μου αρχείου CSV"))
 
 @st.cache_data
 def load_sample_data():
     return pd.read_csv("marketing_data.csv")
 
-if uploaded_file:
-    try:
-        df = pd.read_csv(uploaded_file)
-        st.sidebar.success("✅ Φορτώθηκε το αρχείο σας!")
-    except Exception as e:
-        st.sidebar.error(f"❌ Σφάλμα στο αρχείο: {e}")
-        df = load_sample_data()
-else:
+if data_source == "Demo CSV":
     df = load_sample_data()
-    st.sidebar.info("Χρησιμοποιούνται δείγματα δεδομένων.")
+else:
+    uploaded_file = st.sidebar.file_uploader("📂 Ανεβάστε το CSV αρχείο σας", type=["csv"])
+    if uploaded_file is not None:
+        try:
+            df = pd.read_csv(uploaded_file)
+            st.sidebar.success("✅ Φορτώθηκε το αρχείο σας!")
+        except Exception as e:
+            st.sidebar.error(f"❌ Σφάλμα στο αρχείο: {e}")
+            df = load_sample_data()
+            st.sidebar.info("Χρησιμοποιούνται δείγματα δεδομένων.")
+    else:
+        st.sidebar.warning("⚠️ Παρακαλώ ανεβάστε το αρχείο CSV για να συνεχίσετε.")
+        st.stop()
 
-# Βασικοί υπολογισμοί (αν δεν υπάρχουν ήδη)
+# --- Βασικοί υπολογισμοί (αν δεν υπάρχουν ήδη) ---
 for col in ['ctr', 'cpa']:
     if col not in df.columns:
         if col == 'ctr' and 'clicks' in df.columns and 'impressions' in df.columns:
             df['ctr'] = (df['clicks'] / df['impressions']) * 100
         elif col == 'cpa' and 'cost' in df.columns and 'conversions' in df.columns:
-            df['cpa'] = df['cost'] / df['conversions']
+            # Προσοχή σε διαιρέσεις με μηδέν
+            df['cpa'] = df.apply(lambda x: x['cost'] / x['conversions'] if x['conversions'] > 0 else 0, axis=1)
 df['ctr'] = df['ctr'].round(2)
 df['cpa'] = df['cpa'].round(2)
 
-# --- Filters Sidebar ---
+# --- Sidebar Φίλτρα ---
 st.sidebar.header("Φίλτρα")
 
 channels = st.sidebar.multiselect("Επιλέξτε Κανάλια", options=df["channel"].unique(), default=df["channel"].unique())
 
 filtered_df = df[df["channel"].isin(channels)]
 
-# Αν υπάρχει στήλη 'date', πρόσθεσε date picker
 if 'date' in df.columns:
     df['date'] = pd.to_datetime(df['date'], errors='coerce')
     min_date = df['date'].min()
@@ -57,12 +62,11 @@ if 'date' in df.columns:
             (filtered_df['date'] <= pd.to_datetime(date_range[1]))
         ]
 
-# Slider για κόστος
 max_cost = int(df['cost'].max())
 cost_slider = st.sidebar.slider("Φιλτράρισμα με Κόστος έως (€)", 0, max_cost, max_cost)
 filtered_df = filtered_df[filtered_df['cost'] <= cost_slider]
 
-# --- KPIs in Cards ---
+# --- Βασικά Metrics ---
 st.subheader("📌 Βασικά Metrics")
 
 col1, col2, col3, col4 = st.columns(4)
@@ -72,7 +76,7 @@ col3.metric("Συνολικές Μετατροπές", f"{int(filtered_df['conve
 avg_cpa = filtered_df['cost'].sum() / filtered_df['conversions'].sum() if filtered_df['conversions'].sum() > 0 else 0
 col4.metric("Μέσο CPA (€)", f"{avg_cpa:.2f}")
 
-# --- Tabs for charts and data
+# --- Tabs για Γραφήματα, Δεδομένα και Εξαγωγή ---
 tab1, tab2, tab3 = st.tabs(["Γραφήματα 📈", "Δεδομένα 🗃️", "Εξαγωγή 📤"])
 
 with tab1:
@@ -84,7 +88,7 @@ with tab1:
         "cost": "sum"
     }).reset_index()
     summary["CTR (%)"] = (summary["clicks"] / summary["impressions"]) * 100
-    summary["CPA (€)"] = summary["cost"] / summary["conversions"]
+    summary["CPA (€)"] = summary.apply(lambda x: x["cost"] / x["conversions"] if x["conversions"] > 0 else 0, axis=1)
     summary = summary.round({"CTR (%)":2, "CPA (€)":2})
 
     fig1 = px.bar(summary, x="channel", y="conversions", title="Μετατροπές ανά Κανάλι", text_auto=True)
@@ -100,19 +104,7 @@ with tab1:
 with tab2:
     st.dataframe(filtered_df)
 
-with tab3:
-    st.markdown("### 📥 Κατέβασε τα φιλτραρισμένα δεδομένα")
-
-    csv = filtered_df.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="Κατέβασε CSV",
-        data=csv,
-        file_name='filtered_data.csv',
-        mime='text/csv',
-    )
-
-    # PDF Export function
-   # Ορίζουμε την generate_pdf εκτός του tab3 block
+# Συνάρτηση για δημιουργία PDF (έξω από tab blocks)
 def generate_pdf(dataframe):
     pdf = FPDF()
     pdf.add_page()
@@ -134,22 +126,23 @@ def generate_pdf(dataframe):
     pdf_bytes = pdf.output(dest='S').encode('latin1')
     return pdf_bytes
 
-
 with tab3:
     st.markdown("### 📥 Κατέβασε τα φιλτραρισμένα δεδομένα")
 
     csv = filtered_df.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="Κατέβασε CSV",
+        label="Κατέβασε CSV Αρχείο",
         data=csv,
         file_name='filtered_data.csv',
         mime='text/csv',
+        key="download_csv"
     )
 
     pdf_bytes = generate_pdf(filtered_df)
     st.download_button(
-        label="Κατέβασε PDF",
+        label="Κατέβασε Αναφορά PDF",
         data=pdf_bytes,
         file_name="marketing_report.pdf",
-        mime="application/pdf"
+        mime="application/pdf",
+        key="download_pdf"
     )
