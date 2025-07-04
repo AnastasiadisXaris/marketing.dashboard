@@ -133,4 +133,13 @@ with tab3:
         pdf.ln(row_height)
     
     pdf_output = pdf.output(dest='S').encode('latin1')
-    return pdf_output
+    return pdf_output.getvalue()
+
+pdf_bytes = generate_pdf(filtered_df)
+
+    st.download_button(
+        label="Κατέβασε PDF",
+        data=pdf_bytes,
+        file_name="marketing_report.pdf",
+        mime="application/pdf"
+    )
