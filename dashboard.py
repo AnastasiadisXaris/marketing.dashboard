@@ -4,6 +4,8 @@ import plotly.express as px
 from io import BytesIO
 from fpdf import FPDF
 import datetime
+from pdf_generator import generate_pdf
+
 
 st.set_page_config(page_title="Marketing Analytics Dashboard", layout="wide")
 
