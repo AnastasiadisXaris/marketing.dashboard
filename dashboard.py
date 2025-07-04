@@ -112,7 +112,8 @@ with tab3:
     )
 
     # PDF Export function
-   def generate_pdf(dataframe):
+   # Ορίζουμε την generate_pdf εκτός του tab3 block
+def generate_pdf(dataframe):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -132,3 +133,23 @@ with tab3:
 
     pdf_bytes = pdf.output(dest='S').encode('latin1')
     return pdf_bytes
+
+
+with tab3:
+    st.markdown("### 📥 Κατέβασε τα φιλτραρισμένα δεδομένα")
+
+    csv = filtered_df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Κατέβασε CSV",
+        data=csv,
+        file_name='filtered_data.csv',
+        mime='text/csv',
+    )
+
+    pdf_bytes = generate_pdf(filtered_df)
+    st.download_button(
+        label="Κατέβασε PDF",
+        data=pdf_bytes,
+        file_name="marketing_report.pdf",
+        mime="application/pdf"
+    )
