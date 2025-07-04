@@ -113,29 +113,30 @@ with tab3:
 
     # PDF Export function
     def generate_pdf(dataframe):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Marketing Analytics Report", ln=True, align='C')
-    pdf.ln(10)
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=12)
+        pdf.cell(200, 10, txt="Marketing Analytics Report", ln=True, align='C')
+        pdf.ln(10)
 
-    # Header
-    col_width = pdf.w / (len(dataframe.columns) + 1)
-    row_height = pdf.font_size * 1.5
-    for col_name in dataframe.columns:
-        pdf.cell(col_width, row_height, col_name, border=1)
-    pdf.ln(row_height)
-
-    # Rows
-    for _, row in dataframe.iterrows():
-        for item in row:
-            pdf.cell(col_width, row_height, str(item), border=1)
+        # Header
+        col_width = pdf.w / (len(dataframe.columns) + 1)
+        row_height = pdf.font_size * 1.5
+        for col_name in dataframe.columns:
+            pdf.cell(col_width, row_height, col_name, border=1)
         pdf.ln(row_height)
-    
-    pdf_output = pdf.output(dest='S').encode('latin1')
-    return pdf_output.getvalue()
 
-pdf_bytes = generate_pdf(filtered_df)
+        # Rows
+        for _, row in dataframe.iterrows():
+            for item in row:
+                pdf.cell(col_width, row_height, str(item), border=1)
+            pdf.ln(row_height)
+        
+        pdf_output = BytesIO()
+        pdf.output(pdf_output)
+        return pdf_output.getvalue()
+
+    pdf_bytes = generate_pdf(filtered_df)
 
     st.download_button(
         label="Κατέβασε PDF",
