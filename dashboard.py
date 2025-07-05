@@ -46,22 +46,6 @@ for col in ['ctr', 'cpa']:
 df['ctr'] = df['ctr'].round(2)
 df['cpa'] = df['cpa'].round(2)
 
-st.markdown("""
-📘 **Πώς να χρησιμοποιήσεις το upload CSV:**
-
-1. Κάνε **download** το αρχείο παραδείγματος από το κουμπί παρακάτω.
-2. Συμπλήρωσε τα δικά σου δεδομένα με τις ίδιες στήλες:
-   - `channel,date,impressions,clicks,conversions,cost`
-3. Ανεβάστε το στο πεδίο **Upload CSV**.
-4. Εφάρμοσε φίλτρα και δες τα αποτελέσματα!
-
-```python
-demo_data = pd.DataFrame({/* όπως παραπάνω */})
-csv_buffer = io.StringIO()
-demo_data.to_csv(csv_buffer, index=False)
-st.download_button("📥 Κατέβασε παράδειγμα CSV", data=csv_buffer.getvalue(),
-                   file_name="demo_marketing_data.csv", mime="text/csv")
-
 
 # --- Sidebar Φίλτρα ---
 st.sidebar.header("Φίλτρα")
